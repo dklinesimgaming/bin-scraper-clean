@@ -29,8 +29,12 @@ function todayMidnight() {
     await page.goto(url, { waitUntil: 'networkidle' });
 
     const dates = await page.$$eval(
-      'table tbody tr td:nth-child(2)',
-      tds => tds.map(td => td.textContent.trim())
+  'table tr td:nth-child(2)',
+  tds => tds.map(td => td.textContent)
+);
+
+console.log("RAW DATE CELLS:", dates);
+
     );
 
     const future = dates

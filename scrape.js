@@ -28,14 +28,20 @@ function todayMidnight() {
     console.log(`Scraping ${bin}...`);
     await page.goto(url, { waitUntil: 'networkidle' });
 
-    const dates = await page.$$eval(
-  'table tr td:nth-child(2)',
-  tds => tds.map(td => td.textContent)
+    const rows = await page.$$eval('table tr', trs =>
+  trs.map(tr => {
+    const cells = Array.from(tr.querySelectorAll('td'));
+    return cells.map(td => td.textContent.trim());
+  })
 );
 
-console.log("RAW DATE CELLS:", dates);
+console.log("RAW ROWS:", rows);
 
-    );
+// Extract date-looking values (dd/mm/yyyy)
+const dates = rows
+  .flat()
+  .filter(text => /\d{2}\/\d{2}\/\d{4}/.test(text));
+
 
     const future = dates
       .map(parseUKDate)

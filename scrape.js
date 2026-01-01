@@ -1,4 +1,4 @@
-console.log(">>> CLEAN SCRAPER RUNNING <<<");
+console.log(">>> CLEAN SCRAPER RUNNING (IFRAME MODE) <<<");
 
 const { chromium } = require('playwright');
 
@@ -40,23 +40,41 @@ function todayMidnight() {
 
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-    // Wait until ANY UK-style date appears anywhere on the page
-    await page.waitForFunction(
+    // Wait for ANY iframe to appear
+    await page.waitForSelector('iframe', { timeout: 20000 });
+
+    const frames = page.frames();
+
+    if (frames.length < 2) {
+      console.log(`❌ No iframe content found for ${bin}`);
+      continue;
+    }
+
+    // The embedded content is NOT the main frame
+    const contentFrame = frames.find(f => f !== page.mainFrame());
+
+    if (!contentFrame) {
+      console.log(`❌ Could not access iframe for ${bin}`);
+      continue;
+    }
+
+    // Wait for dates to appear inside iframe
+    await contentFrame.waitForFunction(
       () => /\d{2}\/\d{2}\/\d{4}/.test(document.body.innerText),
       { timeout: 20000 }
     );
 
-    // Extract all visible text
-    const pageText = await page.evaluate(() => document.body.innerText);
+    const frameText = await contentFrame.evaluate(
+      () => document.body.innerText
+    );
 
-    // Extract and parse dates
-    const futureDates = pageText
+    const futureDates = frameText
       .split('\n')
       .map(parseUKDate)
       .filter(d => d && d >= today)
       .sort((a, b) => a - b);
 
-    if (futureDates.length === 0) {
+    if (!futureDates.length) {
       console.log(`❌ No future dates found for ${bin}`);
       continue;
     }

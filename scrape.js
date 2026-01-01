@@ -13,8 +13,12 @@ const BIN_PAGES = {
 function parseUKDate(text) {
   const match = text.match(/(\d{2})\/(\d{2})\/(\d{4})/);
   if (!match) return null;
-  const [, dd, mm, yyyy] = match.map(Number);
-  return new Date(yyyy, mm - 1, dd);
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+
+  return new Date(year, month - 1, day);
 }
 
 function todayMidnight() {
@@ -24,7 +28,7 @@ function todayMidnight() {
 }
 
 /************ MAIN ************/
-(async () => {
+(async function runScraper() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
@@ -36,28 +40,28 @@ function todayMidnight() {
 
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-    // ✅ Wait until ANY UK-style date appears anywhere on the page
+    // Wait until ANY UK-style date appears anywhere on the page
     await page.waitForFunction(
       () => /\d{2}\/\d{2}\/\d{4}/.test(document.body.innerText),
       { timeout: 20000 }
     );
 
-    // ✅ Extract all visible text from the page
+    // Extract all visible text
     const pageText = await page.evaluate(() => document.body.innerText);
 
-    // ✅ Extract and parse dates
-    const dates = pageText
+    // Extract and parse dates
+    const futureDates = pageText
       .split('\n')
       .map(parseUKDate)
       .filter(d => d && d >= today)
       .sort((a, b) => a - b);
 
-    if (!dates.length) {
+    if (futureDates.length === 0) {
       console.log(`❌ No future dates found for ${bin}`);
       continue;
     }
 
-    const nextDate = dates[0].toISOString().slice(0, 10);
+    const nextDate = futureDates[0].toISOString().slice(0, 10);
     results[bin] = nextDate;
 
     console.log(`✅ Next ${bin}: ${nextDate}`);
@@ -67,6 +71,4 @@ function todayMidnight() {
   console.log(JSON.stringify(results, null, 2));
 
   await browser.close();
-})();
-
 })();

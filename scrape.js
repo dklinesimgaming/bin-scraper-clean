@@ -36,21 +36,18 @@ function todayMidnight() {
 
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-    // Wait for the dynamically injected table cells
-    await page.waitForSelector('table tr td', { timeout: 15000 });
-
-    // Extract all table rows
-    const rows = await page.$$eval('table tr', trs =>
-      trs.map(tr =>
-        Array.from(tr.querySelectorAll('td')).map(td =>
-          td.textContent.replace(/\s+/g, ' ').trim()
-        )
-      )
+    // ✅ Wait until ANY UK-style date appears anywhere on the page
+    await page.waitForFunction(
+      () => /\d{2}\/\d{2}\/\d{4}/.test(document.body.innerText),
+      { timeout: 20000 }
     );
 
-    // Pull out valid UK-style dates
-    const dates = rows
-      .flat()
+    // ✅ Extract all visible text from the page
+    const pageText = await page.evaluate(() => document.body.innerText);
+
+    // ✅ Extract and parse dates
+    const dates = pageText
+      .split('\n')
       .map(parseUKDate)
       .filter(d => d && d >= today)
       .sort((a, b) => a - b);
@@ -70,4 +67,6 @@ function todayMidnight() {
   console.log(JSON.stringify(results, null, 2));
 
   await browser.close();
+})();
+
 })();

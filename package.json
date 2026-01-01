@@ -1,0 +1,8 @@
+{
+  "name": "bin-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "playwright": "^1.42.0"
+  }
+}
